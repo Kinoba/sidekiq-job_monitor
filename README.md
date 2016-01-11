@@ -60,6 +60,11 @@ $(function() {
         $el.on('complete', function(e, monitor, data) {
           window.location.href = data.url;
         });
+        // You can also stop monitoring the progress, for instance when the
+        // modal is closed :
+        $el.on('hide', function() {
+          $el.trigger('stop');
+        });
       }
     });
   });

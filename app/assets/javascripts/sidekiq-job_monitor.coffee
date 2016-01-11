@@ -4,9 +4,10 @@ class Sidekiq.JobMonitor
   constructor: (markup, options = {}) ->
     @$el = $(markup)
     @monitorURL = @$el.data('monitor-url')
-    setTimeout(@monitorProgress, 1000)
-    $('body').trigger('start', [this])
+    @monitor()
     options.onStart?(@$el)
+    @$el.on('stop', @stopMonitoring)
+    $('body').trigger('start', [this])
 
   monitorProgress: =>
     $.getJSON(@monitorURL)
@@ -17,7 +18,10 @@ class Sidekiq.JobMonitor
     if data.state is 'complete'
       @jobComplete(data)
     else
-      setTimeout(@monitorProgress, 1000)
+      @monitor()
+
+  monitor: ->
+    @monitorTimer = setTimeout(@monitorProgress, 1000)
 
   jobComplete: (data) ->
     console.log "trigger completion : ", this, data
@@ -26,9 +30,8 @@ class Sidekiq.JobMonitor
   jobFailed: =>
     @$el.trigger('failed', [this])
 
-  trigger: (eventName, args...) ->
-    args = [this].concat(args)
-    @$el.trigger(eventName, args)
+  stopMonitoring: =>
+    clearTimeout(@monitorTimer) if @monitorTimer
 
 $.fn.sidekiqJobMonitor = (options = {}) ->
   @each (i, el) ->
