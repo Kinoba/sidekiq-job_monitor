@@ -49,6 +49,7 @@ module Sidekiq
 
       def monitoring_data
         worker_instance = worker.new
+        worker_instance.jid = attributes['jid']
 
         if worker_instance.respond_to?(:monitoring_data)
           worker_instance.monitoring_data(*attributes['args'], state)

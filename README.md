@@ -29,6 +29,12 @@ Mount the engine in your routes.rb :
 mount Sidekiq::JobMonitor::Engine => '/job-monitor', as: :job_monitor
 ```
 
+Then load the js library by adding the following to your `application.js` :
+
+```javascript
+//= require sidekiq-job_monitor
+```
+
 ## Usage
 
 The supported workflow for the gem is the following :

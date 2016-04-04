@@ -5,8 +5,9 @@ class Sidekiq.JobMonitor
     @$el = $(markup)
     @monitorURL = @$el.data('monitor-url')
     @monitor()
-    options.onStart?(@$el)
+    options.onStart?(this)
     @$el.on('stop', @stopMonitoring)
+    @$el.on('cancel', @cancelJob)
     $('body').trigger('start', [this])
 
   monitorProgress: =>
@@ -32,6 +33,12 @@ class Sidekiq.JobMonitor
 
   stopMonitoring: =>
     clearTimeout(@monitorTimer) if @monitorTimer
+
+  cancelJob: =>
+    $.get([@monitorURL, 'cancel'].join('/')).done(@jobCanceled)
+
+  jobCanceled: =>
+    @$el.trigger('canceled', [this])
 
 $.fn.sidekiqJobMonitor = (options = {}) ->
   @each (i, el) ->
