@@ -16,16 +16,15 @@ class Sidekiq.JobMonitor
       .fail(@jobFailed)
 
   onMonitorProgressData: (data) =>
-    if data.state is 'complete'
-      @jobComplete(data)
-    else
-      @monitor()
+    switch data.state
+      when 'complete' then @jobComplete(data)
+      when 'failed' then @jobFailed(data)
+      else @monitor()
 
   monitor: ->
     @monitorTimer = setTimeout(@monitorProgress, 1000)
 
   jobComplete: (data) ->
-    console.log "trigger completion : ", this, data
     @$el.trigger('complete', [this, data])
 
   jobFailed: =>
@@ -34,11 +33,22 @@ class Sidekiq.JobMonitor
   stopMonitoring: =>
     clearTimeout(@monitorTimer) if @monitorTimer
 
+  # Canceling job will only work for queued jobs, and not for running ones
+  #
+  # If the job is running, cancelation will be ignored and no error raised
+  #
   cancelJob: =>
-    $.get([@monitorURL, 'cancel'].join('/')).done(@jobCanceled)
+    $.get(@remoteURL('cancel')).done(@jobCanceled)
 
   jobCanceled: =>
     @$el.trigger('canceled', [this])
+
+  remoteURL: (action = null) ->
+    return @monitorURL unless action
+    urlParts = @monitorURL.split('?')
+    url = [urlParts[0], action].join('/')
+    queryParams = urlParts[1]
+    if queryParams then [url, queryParams].join('?') else url
 
 $.fn.sidekiqJobMonitor = (options = {}) ->
   @each (i, el) ->

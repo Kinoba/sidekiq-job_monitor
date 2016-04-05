@@ -1,10 +1,11 @@
 module Sidekiq
   module JobMonitor
     class Job
-      attr_reader :attributes
+      attr_reader :attributes, :original_job
 
       def initialize(attributes)
         @attributes = attributes.as_json(only: %w(class jid args state))
+        @original_job = attributes[:original_job]
       end
 
       def save
@@ -56,6 +57,11 @@ module Sidekiq
         end
       end
 
+      def cancel
+        return unless original_job
+        original_job.delete
+      end
+
       class << self
         def find(jid)
           find_in_queues(jid) || find_in_previous(jid)
@@ -69,7 +75,10 @@ module Sidekiq
 
         def find_in_queues(jid)
           job = Sidekiq::Queue.new.find_job(jid)
-          new(job.item) if job
+          return unless job
+
+          attributes = { original_job: job }.merge(job.item)
+          new(attributes)
         end
 
         def find_in_previous(jid)
